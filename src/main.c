@@ -5,35 +5,60 @@
 
 void *bitcpy (void *dest, const void *src, unsigned int bits);
 
+void printBinary(const void *stuff);
+
 int main()
 {
-    printf("Stealth Assignment\n");
-    
+    printf("Stealth Assignment\n"); 
+	printf("OS is %i bits\n\n", sizeof(void *) * 8);
+	printf("----------------------------------------------\n");
+
     // Example: 100 = 110100
-    int size = 20;
-	int byte_len = 9;
+	int size = 100;
+	int byte_len = 20;
 	char mem_src[] = "Memcpy test string";
 	char mem_dest[size];
 	mem_dest[0] = '\0';
 
 	// Memcpy Example
+	printf("MEMCOPY EXAMPLE\n");
 	printf("Source: %s\n", mem_src);
-	printf("Initial Destination: %s\n", mem_dest);
-	memcpy(mem_dest, mem_src, 9);
+	printf("Bytes to take: %i\n", byte_len);
+	memcpy(mem_dest, mem_src, byte_len);
 	mem_dest[byte_len + 1] = '\0'; 
-	printf("Final Destination: %s\n", mem_dest);
+	printf("Final Destination: %s\n\n", mem_dest);
+	printf("----------------------------------------------\n");
 
 	// Bitcpy Example
-	int bit_len = 48;
+	printf("BITCOPY EXAMPLE\n");
+	
+	// Number of Bits to copy
+	int bit_len = 100;
+	
+	// String to copy bits from
 	char bit_src[] = "Bitcpy test string";
-	char bit_dest[size];
+	
+	// Initialize copy location
+	char bit_dest[sizeof(bit_src)*8];
 	bit_dest[0] = '\0';
-	printf("Source: %s\n", bit_src);
-	printf("Initial Destination: %s\n", bit_dest);
-	bitcpy(bit_dest, bit_src, sizeof(bit_src)*8);
-	bit_dest[bit_len+1] = '\0';
-	printf("Final Destination: %s\n", bit_dest);
 
+	// Summary
+	printf("Source: %s\n", bit_src);
+	printf("Bits to take: %i\n", bit_len);
+	
+	// Call to bitcpy
+	bitcpy(bit_dest, bit_src, bit_len);
+	bit_dest[(int) ceil(bit_len/8) + 1] = '\0';
+	printf("Copy:   %s\n", bit_dest);
+
+	// Binary summary
+	printf("BINARY SOURCE: \n");
+	printBinary(bit_src);
+	printf("BINARY COPY:   \n");
+	printBinary(bit_dest);
+	printf("\n");
+
+	printf("This solution pads the remaining bits of the final byte with zeros\n");
     return 0;
 }
 
@@ -60,56 +85,79 @@ void *bitcpy (void *dest, const void *src, unsigned int bits)
 	// 2: 11   = 3  = 2^2 - 1
 	// 3: 111  = 7  = 2^3 - 1
 	// 4: 1111 = 15 = 2^4 - 1
+	
+	// Tricky Case: Less than 8 remaining
+	// 4 remaining: 00001111
+	// Assume all : 11111111
+	// all - 4 = 11110000	
 	int bit_count = bits;
+	
+	// Account for bit copies greater than one char 
 	unsigned int temp = 0;
-	unsigned int acc = 0;
 	unsigned int mask = 0;
-	for(int i = 0; i < sizeof(s); i++)
+	unsigned int char_count = 0;
+	while(bit_count > 0)
 	{
+		//printf("BITS LEFT = %i", bit_count);
 		// Determine the mask for this byte
-		if(bit_count > 8)
+		if(bit_count >= 8)
 		{
 			mask = pow(2, 8) - 1;
+			//printf("BIT MASK: %i\n", mask);
 		}
 		else
 		{
-			mask = pow(2, bit_count) - 1;
+			mask = 255 - (pow(2, 8-bit_count) - 1);
+			//printf("BIT MASK: %i\n", mask);
 		}
 		
 		// Mask the character 
-		temp = s[i] & mask;
-
-		// Shift the accumulator if past the first byte
-		if(bit_count > 8 && i > 0)
-		{
-			acc = acc << 8;
-		}
-		else if(bit_count < 8 && i > 0)
-		{
-			acc = acc << bit_count;
-		}
-
+		temp = s[char_count] & mask;
+		
 		// Add the byte to the current accumulator
-		acc = acc | temp;
-		printf("%i\n", temp);
-
+		d[char_count] = temp;
+		
 		// Account for the processed bits
 		bit_count = bit_count - 8;
+		char_count++;
 	}
 	
-	printf("%i\n", acc);
-
-	d = *s & mask;
-	
-return dest;	
+	// Fill the remaining destination with zeros
+	while(char_count < sizeof(s))
+	{
+		// Add the byte to the current accumulator
+		temp = 0;
+		d[char_count] = temp;
+		char_count++;
+	}
+	return dest;	
 }
 
-/*void printBinary(const void *stuff)
+void printBinary(const void *stuff)
 {
-	unsigned int val = 0;
-	for(int i = 0; i < sizeof(stuff); i++)
-	{
-		for(int j = 7; j <= 0; j--)
-		{
-*/			
+	char *s = stuff;
+	char check_size = s[0];
+	unsigned int size = 1;
 
+	// Determine length of the character buffer
+	while(check_size != '\0')
+	{
+		size++;
+		check_size = s[size];
+	}
+	
+	// Remove extra character from the \0
+	size--;
+
+	// Print the binary from the memory
+	//printf("String length = %i\n", size);
+	unsigned int val = 0;
+	for(int i = 0; i < size; i++)
+	{
+		for(int j = 7; j >= 0; j--)
+		{
+			printf("%i", (s[i] >> j) & 1);
+		}
+	}
+	printf("\n");
+}
